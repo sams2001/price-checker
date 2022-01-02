@@ -149,10 +149,8 @@ if (__name__ == "__main__"):
     if(len(current_tracked_items) > 0):
         for i in (current_tracked_items):
             url = i[1]
-            print(url)
             
             name = i[0]
-            print(name)
 
             x, price = get_current_price(url)
 
