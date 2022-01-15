@@ -72,12 +72,12 @@ if (__name__ == "__main__"):
 
     strippedName = ''.join( chr for chr in name if chr.isalnum() )
 
-    ok = c.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'prices';")
-    ok = str(c.fetchall())
+    allTableNames = c.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'prices';")
+    allTableNames = str(c.fetchall())
 
 
 
-    if(strippedName not in ok):
+    if(strippedName not in allTableNames):
         add_to_items_table(name, url, c)
         
     #delete_item(url, strippedName, c)

@@ -6,7 +6,6 @@ from email.message import EmailMessage
 import os
 import smtplib
 
-
 endpoint = os.environ.get("ENDPOINT")
 
 username = os.environ.get("USERNAME")
@@ -40,6 +39,7 @@ def send_email(message):
         server.login(USERNAME_SMTP, PASSWORD_SMTP)
         server.sendmail(SENDER, RECIPIENT, str(msg))
         server.close()
+        
 # Display an error message if something goes wrong.
     except Exception as e:
         print ("Error: ", e)
@@ -129,12 +129,12 @@ if (__name__ == "__main__"):
     today = str(datetime.now())
 
     
-    ok = c.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'prices';")
-    ok = str(c.fetchall())
+    allTableNames = c.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'prices';")
+    allTableNames = str(c.fetchall())
     c.close()
-    c= conn.cursor()
+    c = conn.cursor()
 
-    if('items' not in ok):
+    if('items' not in allTableNames):
         c.execute("""CREATE TABLE items (
         name TEXT, 
         url TEXT
@@ -148,33 +148,34 @@ if (__name__ == "__main__"):
     
     if(len(current_tracked_items) > 0):
         for i in (current_tracked_items):
-            url = i[1]
             
             name = i[0]
 
-            x, price = get_current_price(url)
+            url = i[1]
+
+            nonSalePrice, currentPrice = get_current_price(url)
 
             strippedName = ''.join( chr for chr in name if chr.isalnum() )
             
-            if(strippedName not in ok):
+            if(strippedName not in allTableNames):
                 create_price_table(strippedName,c)
                 email_message += f"\n \n {name} has been entered too recently to compare to yesterdays price, but today it costs ${price}, the URL is {url}"
             
             else:
                 last_price = (c.execute(f"SELECT price from prices.{strippedName} order by id DESC LIMIT 1"))
                 last_price = float(c.fetchone()[0])
-                sale_amount = 1.0 - (float(price)/last_price)
+                sale_amount = 1.0 - (float(currentPrice)/last_price)
+
                 if(x is not None):
-                    email_message += f"\n \n {name} is currently on sale for ${price}, the regular price is ${x}, the URL is {url}"
+                    email_message += f"\n \n {name} is currently on sale for ${currentPrice}, the regular price is ${nonSalePrice}, the URL is {url}"
                     
                 else:
-                    
-                    email_message += f"\n \n The price for {name} is now ${price}, {sale_amount}% less than yesterday! The URL is {url}"
+                    email_message += f"\n \n The price for {name} is now ${currentPrice}, {sale_amount}% less than yesterday! The URL is {url}"
                 
                 
                 
                 
-            add_to_price_table(strippedName, price, today,c)
+            add_to_price_table(strippedName, currentPrice, today,c)
         
     if (len(email_message) > 0):
         send_email(email_message)
